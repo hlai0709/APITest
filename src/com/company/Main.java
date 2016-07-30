@@ -5,67 +5,89 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Main {
 
-    @Test
-    public void APITest() throws Exception {
-        JSONObject jsonObject = new JSONObject();
-        String tmpString1;
-        String tmpString2;
+    @BeforeClass
+    public void APICall() throws Exception {
         boolean[] testFlags = new boolean[2];
         Arrays.fill(testFlags,false);
-
-        System.out.println("Hello World!");
+        JSONObject jsonObject = new JSONObject();
         String url = "http://www.accuweather.com/ajax-service/livefeed/topnews-us/?format=json";
         String htmlPage = usingHttpClientFacade(url);
-        System.out.println(htmlPage);
         JSONArray jsonArray = new JSONArray (htmlPage);
         for(int i = 0; i<jsonArray.length(); i++){
             jsonObject = jsonArray.getJSONObject(i);
-            String purple = jsonObject.get("Tags").toString();
 
-            /*
-            Test 1 to ensure at least one item with an empty array for tags
-             */
-            if (purple.equalsIgnoreCase("[]") && testFlags[0] == false) {
-                testFlags[0] = true;
-                Assert.assertTrue(purple.equalsIgnoreCase("[]"),"There is at least one item with empty array for Tags");
+            if(!testFlags[0]){
+               testFlags[0] =  APITest1(jsonObject);
             }
 
-            /*
-            Test 2 to ensure at least one item with a non empty array for tags
-             */
-            if(!purple.isEmpty() && purple.equalsIgnoreCase("[]") != false && testFlags[1] == false) {
-                testFlags[1] = true;
-                Assert.assertTrue(!purple.isEmpty(), "There is at least one item with non-empty array for Tags");
+            if(!testFlags[1]){
+                testFlags[1] = APITest2(jsonObject);
             }
 
-            /*
-            Test 3 to ensure that no emtpy ThumbUrl field is exist
-             */
-            Assert.assertTrue(!jsonObject.get("ThumbUrl").toString().isEmpty(),"Found an empty ThumbUrl field!!!");
-
-            /*
-            Test 4 to check that all TagsText fields are just concatenation of all the individual items in tags
-             */
-            tmpString1 = jsonObject.get("Tags").toString();
-            tmpString1 = tmpString1.replace("[","");
-            tmpString1 = tmpString1.replace("]","");
-            tmpString1 = tmpString1.replace("\"","");
-            tmpString2 = jsonObject.get("TagsText").toString();
-            tmpString2 = tmpString2.replace("'","");
-            Assert.assertEquals(tmpString1,tmpString2);
+            APITest3(jsonObject);
+            APITest4(jsonObject);
         }
+
+
+
     }
+
+    @Test
+    public boolean APITest1(JSONObject jsonObject) throws JSONException {
+        String purple = jsonObject.get("Tags").toString();
+        if (purple.equalsIgnoreCase("[]")) {
+            Assert.assertTrue(purple.equalsIgnoreCase("[]"),"There is at least one item with empty array for Tags");
+            return true;
+        }
+        return false;
+    }
+
+    @Test
+    public boolean APITest2(JSONObject jsonObject) throws Exception {
+
+        String purple = jsonObject.get("Tags").toString();
+        if(!purple.isEmpty() && purple.equalsIgnoreCase("[]") != false) {
+            Assert.assertTrue(!purple.isEmpty(), "There is at least one item with non-empty array for Tags");
+            return true;
+        }
+        return false;
+    }
+
+    @Test
+    public void APITest3(JSONObject jsonObject) throws Exception{
+        Assert.assertTrue(!jsonObject.get("ThumbUrl").toString().isEmpty(),"Found an empty ThumbUrl field!!!");
+    }
+
+    @Test
+    public void APITest4(JSONObject jsonObject) throws Exception {
+
+        String tmpString1;
+        String tmpString2;
+
+        tmpString1 = jsonObject.get("Tags").toString();
+        tmpString1 = tmpString1.replace("[","");
+        tmpString1 = tmpString1.replace("]","");
+        tmpString1 = tmpString1.replace("\"","");
+        tmpString2 = jsonObject.get("TagsText").toString();
+        tmpString2 = tmpString2.replace("'","");
+        Assert.assertEquals(tmpString1,tmpString2);
+    }
+
+
 
 
     private static String usingHttpClientFacade(String url) throws Exception {
