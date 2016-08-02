@@ -1,5 +1,8 @@
 package com.company;
 
+/*
+Author: Henry Lai
+ */
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
