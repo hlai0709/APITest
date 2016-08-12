@@ -12,38 +12,45 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Main {
 
     private JSONObject jsonObject = new JSONObject();
     private JSONArray jsonArray = new JSONArray();
-    private boolean[] testFlags = new boolean[2];
+
+    @DataProvider(name = "urlFields")
+    public Object[][] fieldNames(){
+        return new Object[][]{
+                {"ThumbUrl",""},
+                {"BaseUrl",""},
+                {"MobileUrl",""},
+                {"Title",""}
+        };
+    }
 
     @BeforeClass
-    public void APICall() throws Exception {
-        Arrays.fill(testFlags,false);
+    public void APITestingExcercise() throws Exception {
         String url = "http://www.accuweather.com/ajax-service/livefeed/topnews-us/?format=json";
         String htmlPage = usingHttpClientFacade(url);
         jsonArray = new JSONArray(htmlPage);
     }
 
     @Test
-    public void APITest1() throws JSONException {
+    public void checkForAtLeastOneEmptyTagArray() throws JSONException {
+        boolean failFlag = false;
 
         for(int i = 0; i<jsonArray.length(); i++){
             jsonObject = jsonArray.getJSONObject(i);
-            if(!testFlags[0]){
+            if(!failFlag){
                 String purple = jsonObject.get("Tags").toString();
                 if (purple.equalsIgnoreCase("[]")) {
                     Assert.assertTrue(purple.equalsIgnoreCase("[]"),"There is at least one item with empty array for Tags");
-                    testFlags[0] = true;
+                    failFlag = true;
                 }
             }
         }
@@ -52,33 +59,34 @@ public class Main {
 
     }
 
-    @Test
-    public void APITest2() throws Exception {
+    @Test(dependsOnMethods = "checkForAtLeastOneEmptyTagArray")
+    public void checkForAtLeastOneNonEmptyArray() throws Exception {
+        boolean failFlag = false;
 
         for(int i = 0; i<jsonArray.length(); i++){
             jsonObject = jsonArray.getJSONObject(i);
-            if(!testFlags[1]){
+            if(!failFlag){
                 String purple = jsonObject.get("Tags").toString();
                 if(!purple.isEmpty() && purple.equalsIgnoreCase("[]") != false) {
                     Assert.assertTrue(!purple.isEmpty(), "There is at least one item with non-empty array for Tags");
-                    testFlags[1] = true;
+                    failFlag = true;
                 }
             }
         }
 
     }
 
-    @Test
-    public void APITest3() throws Exception{
+    @Test(dataProvider = "urlFields")
+    public void checkForEmptyFields(String fieldName, String emptyString) throws Exception{
         for(int i = 0; i<jsonArray.length(); i++){
             jsonObject = jsonArray.getJSONObject(i);
-            Assert.assertTrue(!jsonObject.get("ThumbUrl").toString().isEmpty(),"Found an empty ThumbUrl field!!!");
+            Assert.assertTrue(!jsonObject.get(fieldName).toString().isEmpty(),"Found an empty ThumbUrl field!!!");
         }
 
     }
 
-    @Test
-    public void APITest4() throws Exception {
+    @Test(dependsOnMethods = "checkForAtLeastOneNonEmptyArray")
+    public void checkToSeeThatTagsAndTagsTextAreTheSame() throws Exception {
 
         String tmpString1;
         String tmpString2;
